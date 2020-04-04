@@ -92,8 +92,6 @@ def get_bboxes_single(cls_score_list,
         mlvl_bboxes.append(bboxes)
         mlvl_scores.append(scores)
     mlvl_bboxes = np.concatenate(mlvl_bboxes)
-    if rescale:
-        mlvl_bboxes /= np.array(scale_factor, dtype=mlvl_bboxes.dtype)
     mlvl_scores = np.concatenate(mlvl_scores)
     if use_sigmoid_cls:
         # Add a dummy background class to the front when using sigmoid
@@ -103,5 +101,10 @@ def get_bboxes_single(cls_score_list,
     det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                             cfg.score_thr, cfg.nms,
                                             cfg.max_per_img)
+    if rescale:
+        det_bboxes[:, 0] *= scale_factor[0]
+        det_bboxes[:, 1] *= scale_factor[1]
+        det_bboxes[:, 2] *= scale_factor[0]
+        det_bboxes[:, 3] *= scale_factor[1]
 
     return det_bboxes, det_labels

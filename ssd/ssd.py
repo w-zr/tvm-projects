@@ -9,8 +9,8 @@ import tvm.relay as relay
 
 # load image
 image_path = '9331584514251_.pic_hd.jpg'
-img = cv2.imread(image_path)
-img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+image = cv2.imread(image_path)
+img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 pre_start = time.process_time()
 
@@ -25,7 +25,7 @@ img = img.transpose(2, 0, 1)
 pre_end = time.process_time()
 
 # load onnx model and build tvm runtime
-target = 'cuda'
+target = 'llvm'
 ctx = tvm.context(target)
 dtype = 'float32'
 mssd = onnx.load('mssd.onnx')
@@ -79,7 +79,8 @@ mlvl_anchors = gen_anchors()
 # recover bbox
 from bbox_utils import get_bboxes_single
 
-scale_factor = 1.
+img_shape = image.shape
+scale_factor = [img_shape[1] / resize_shape[1], img_shape[0] / resize_shape[0]] # x_scale, y_scale
 
 cfg = dict(
     nms=dict(type='nms', iou_thr=0.45),
@@ -91,7 +92,7 @@ from easydict import EasyDict
 
 cfg = EasyDict(cfg)
 proposals = get_bboxes_single(cls_score_list, bbox_pred_list, mlvl_anchors, resize_shape, scale_factor, cfg,
-                              rescale=False)
+                              rescale=True)
 post_end = time.process_time()
 post_time_list.append(post_end - post_start)
 
@@ -100,21 +101,11 @@ from heapq import nlargest
 print(sum(nlargest(20, time_list)) / 20)
 print(sum(nlargest(20, post_time_list)) / 20)
 
-image = cv2.imread(image_path)
-
-img_shape = image.shape
-y_scale = img_shape[0] / resize_shape[0]
-x_scale = img_shape[1] / resize_shape[1]
-
-bboxes = proposals[0]
-labels = proposals[1]
-bboxes[:, 0] = bboxes[:, 0] * x_scale
-bboxes[:, 1] = bboxes[:, 1] * y_scale
-bboxes[:, 2] = bboxes[:, 2] * x_scale
-bboxes[:, 3] = bboxes[:, 3] * y_scale
 
 from vis_bbox import imshow_det_bboxes
 
+bboxes = proposals[0]
+labels = proposals[1]
 imshow_det_bboxes(image, bboxes, labels, score_thr=0.9, out_file='out.png')
 
 print("pre: {}".format(pre_end - pre_start))

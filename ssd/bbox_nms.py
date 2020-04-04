@@ -1,5 +1,5 @@
-import torch
-import torchvision
+import numpy as np
+from utils import nms
 
 
 def multiclass_nms(multi_bboxes,
@@ -26,14 +26,12 @@ def multiclass_nms(multi_bboxes,
         tuple: (bboxes, labels), tensors of shape (k, 5) and (k, 1). Labels
             are 0-based.
     """
-    multi_bboxes = torch.from_numpy(multi_bboxes)
-    multi_scores = torch.from_numpy(multi_scores)
-    num_classes = multi_scores.size(1) - 1
+    num_classes = multi_scores.shape[1] - 1
     # exclude background category
     if multi_bboxes.shape[1] > 4:
-        bboxes = multi_bboxes.view(multi_scores.size(0), -1, 4)[:, 1:]
+        bboxes = multi_bboxes.reshape(multi_scores.shape[0], -1, 4)[:, 1:]
     else:
-        bboxes = multi_bboxes[:, None].expand(-1, num_classes, 4)
+        bboxes = multi_bboxes[:, None]
     scores = multi_scores[:, 1:]
 
     # filter out boxes with low scores
@@ -42,11 +40,11 @@ def multiclass_nms(multi_bboxes,
     if score_factors is not None:
         scores = scores * score_factors[:, None]
     scores = scores[valid_mask]
-    labels = valid_mask.nonzero()[:, 1]
+    labels = valid_mask.nonzero()[1]
 
-    if bboxes.numel() == 0:
-        bboxes = multi_bboxes.new_zeros((0, 5))
-        labels = multi_bboxes.new_zeros((0, ), dtype=torch.long)
+    if bboxes.size == 0:
+        bboxes = np.zeros((0, 5), dtype=multi_bboxes.dtype)
+        labels = np.zeros((0, ), dtype=np.long)
         return bboxes, labels
 
     # Modified from https://github.com/pytorch/vision/blob
@@ -56,25 +54,24 @@ def multiclass_nms(multi_bboxes,
     # only on the class idx, and is large enough so that boxes
     # from different classes do not overlap
     max_coordinate = bboxes.max()
-    offsets = labels.to(bboxes) * (max_coordinate + 1)
+    offsets = labels.astype(bboxes.dtype) * (max_coordinate + 1)
     bboxes_for_nms = bboxes + offsets[:, None]
 
-    scores = scores.to(dtype=torch.double)
-    bboxes_for_nms = bboxes_for_nms.to(dtype=torch.double)
+    scores = scores.astype(np.float64)
+    bboxes_for_nms = bboxes_for_nms.astype(np.float64)
 
     nms_cfg_ = nms_cfg.copy()
-    nms_type = nms_cfg_.pop('type', 'nms')
-    nms_op = torchvision.ops.nms
-    keep = nms_op(bboxes_for_nms, scores, nms_cfg_.get('iou_thr', None))
+
+    keep = nms(bboxes_for_nms, scores, nms_cfg_.get('iou_thr', None))
     bboxes = bboxes[keep]
     scores = scores[keep]
     labels = labels[keep]
 
-    if keep.size(0) > max_num:
-        _, inds = scores.sort(descending=True)
+    if len(keep) > max_num:
+        inds = scores.argsort()[::-1]
         inds = inds[:max_num]
         bboxes = bboxes[inds]
         scores = scores[inds]
         labels = labels[inds]
 
-    return torch.cat([bboxes, scores[:, None]], 1), labels
+    return np.concatenate([bboxes, scores[:, None]], 1), labels

@@ -49,4 +49,10 @@ if __name__ == '__main__':
     deltas = np.array([[0., 0., 0., 0.], [1., 1., 1., 1.], [0., 0., 2., -1.], [0.7, -1.9, -0.5, 0.3]])
 
     import bbox_utils
-    print(bbox_utils.delta2bbox(rois, deltas, max_shape=(32, 32)))
+    #print(bbox_utils.delta2bbox(rois, deltas, max_shape=(32, 32)))
+
+    y = np.zeros((1, 2, 3, 4, 5))
+
+    print(y.size)
+    print(x.numel())
+    assert(y.size == x.numel())

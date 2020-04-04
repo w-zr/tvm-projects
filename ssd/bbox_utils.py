@@ -75,7 +75,6 @@ def get_bboxes_single(cls_score_list,
             scores = softmax(cls_score)
         bbox_pred = np.transpose(bbox_pred, (1, 2, 0)).reshape(-1, 4)
         nms_pre = cfg.get('nms_pre', -1)
-        print(nms_pre, scores.shape[0])
         if 0 < nms_pre < scores.shape[0]:
             # Get maximum scores for foreground classes.
             if use_sigmoid_cls:

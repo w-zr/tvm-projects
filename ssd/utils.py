@@ -36,23 +36,22 @@ def nms(dets, scores, prob_threshold):
 
     areas = (x2 - x1 + 1) * (y2 - y1 + 1)
 
-    score_index = np.argsort(scores)[::-1]
-
+    score_index = scores.argsort()[::-1]
     keep = []
 
-    while score_index > 0:
-        max_index = score_index[0]
-        keep.append(max_index)
-        xx1 = np.maximum(x1[max_index], x1[score_index[1:]])
-        yy1 = np.maximum(y1[max_index], y1[score_index[1:]])
-        xx2 = np.maximum(x2[max_index], x2[score_index[1:]])
-        yy2 = np.maximum(y2[max_index], y2[score_index[1:]])
+    while score_index.size > 0:
+        i = score_index[0]
+        keep.append(i)
+        xx1 = np.maximum(x1[i], x1[score_index[1:]])
+        yy1 = np.maximum(y1[i], y1[score_index[1:]])
+        xx2 = np.minimum(x2[i], x2[score_index[1:]])
+        yy2 = np.minimum(y2[i], y2[score_index[1:]])
 
-        width = np.maximum(0.0, xx2 - xx1 + 1)
-        height = np.maximum(0.0, yy2 - yy1 + 1)
-        union = width * height
+        w = np.maximum(0.0, xx2 - xx1 + 1)
+        h = np.maximum(0.0, yy2 - yy1 + 1)
+        union = w * h
+        iou = union / (areas[i] + areas[score_index[1:]] - union)
 
-        iou = union / (areas[max_index] + areas[score_index[1:]] - union)
         ids = np.where(iou <= prob_threshold)[0]
         score_index = score_index[ids + 1]
 

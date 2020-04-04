@@ -105,8 +105,8 @@ img_shape = image.shape
 y_scale = img_shape[0] / resize_shape[0]
 x_scale = img_shape[1] / resize_shape[1]
 
-bboxes = proposals[0].cpu().detach().numpy()
-labels = proposals[1].cpu().detach().numpy()
+bboxes = proposals[0]
+labels = proposals[1]
 bboxes[:, 0] = bboxes[:, 0] * x_scale
 bboxes[:, 1] = bboxes[:, 1] * y_scale
 bboxes[:, 2] = bboxes[:, 2] * x_scale

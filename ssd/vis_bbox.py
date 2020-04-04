@@ -2,6 +2,7 @@ from enum import Enum
 import numpy as np
 import cv2
 
+
 class Color(Enum):
     """An enum that defines common colors.
     Contains red, green, blue, cyan, yellow, magenta, white and black.
@@ -14,6 +15,7 @@ class Color(Enum):
     magenta = (255, 0, 255)
     white = (255, 255, 255)
     black = (0, 0, 0)
+
 
 def imshow_det_bboxes(img,
                       bboxes,
@@ -74,6 +76,6 @@ def imshow_det_bboxes(img,
                     cv2.FONT_HERSHEY_COMPLEX, font_scale, text_color)
 
     if show:
-        cv2.imshow(img, win_name, wait_time)
+        cv2.imshow(img, win_name)
     if out_file is not None:
         cv2.imwrite(out_file, img)

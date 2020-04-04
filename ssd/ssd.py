@@ -7,7 +7,6 @@ import tvm.relay as relay
 from PIL import Image
 from torchvision import transforms
 
-
 # load image
 image_path = '9331584514251_.pic_hd.jpg'
 
@@ -61,46 +60,44 @@ module.set_input(**params)
 module.set_input('input.1', tvm.nd.array(img.numpy().astype('float32')))
 time_list = []
 post_time_list = []
-for i in range(100):
-    start = time.process_time()
-    module.run()
-    end = time.process_time()
-    time_list.append(end - start)
 
-    # get output
-    post_start = time.process_time()
-    cls_score_list = [module.get_output(i).asnumpy()[0] for i in range(6)]
-    bbox_pred_list = [module.get_output(i + 6).asnumpy()[0] for i in range(6)]
+start = time.process_time()
+module.run()
+end = time.process_time()
+time_list.append(end - start)
 
-    # generate anchor
-    from anchor import gen_anchors
+# get output
+post_start = time.process_time()
+cls_score_list = [module.get_output(i).asnumpy()[0] for i in range(6)]
+bbox_pred_list = [module.get_output(i + 6).asnumpy()[0] for i in range(6)]
 
-    mlvl_anchors = gen_anchors()
+# generate anchor
+from anchor import gen_anchors
 
-    # recover bbox
-    from bbox_utils import get_bboxes_single
+mlvl_anchors = gen_anchors()
+# recover bbox
+from bbox_utils import get_bboxes_single
 
-    scale_factor = 1.
+scale_factor = 1.
 
-    cfg = dict(
-        nms=dict(type='nms', iou_thr=0.45),
-        min_bbox_size=0,
-        score_thr=0.02,
-        max_per_img=200
-    )
-    from easydict import EasyDict
+cfg = dict(
+    nms=dict(type='nms', iou_thr=0.45),
+    min_bbox_size=0,
+    score_thr=0.02,
+    max_per_img=200
+)
+from easydict import EasyDict
 
-    cfg = EasyDict(cfg)
-    proposals = get_bboxes_single(cls_score_list, bbox_pred_list, mlvl_anchors, resize_shape, scale_factor, cfg,
-                                  rescale=False)
-    post_end = time.process_time()
-    post_time_list.append(post_end - post_start)
-
+cfg = EasyDict(cfg)
+proposals = get_bboxes_single(cls_score_list, bbox_pred_list, mlvl_anchors, resize_shape, scale_factor, cfg,
+                              rescale=False)
+post_end = time.process_time()
+post_time_list.append(post_end - post_start)
 
 from heapq import nlargest
+
 print(sum(nlargest(20, time_list)) / 20)
 print(sum(nlargest(20, post_time_list)) / 20)
-
 
 image = cv2.imread(image_path)
 

@@ -16,27 +16,23 @@ def addcmul(px: np.ndarray, pw: np.ndarray, dx: np.ndarray):
     return px + pw * dx
 
 
-def topk(x: np.ndarray, k: int, axis=0):
+def topk(x: np.ndarray, k: int, axis=1):
     part = np.argpartition(x, k, axis=axis)
     if axis == 0:
-        row_index = np.arange(x.shape[1 - axis])
+        row_index = np.arange(x.shape[1])
         sort_K = np.argsort(x[part[k + 1:, :], row_index], axis=axis)
-        return part[k + 1:, :][sort_K, row_index]
+        return np.fliplr(part[k + 1:, :][sort_K, row_index])
     else:
         column_index = np.arange(x.shape[1 - axis])[:, None]
         sort_K = np.argsort(x[column_index, part[:, k + 1:]], axis=axis)
-        return part[:, k + 1:][column_index, sort_K]
+        return np.fliplr(part[:, k + 1:][column_index, sort_K])
 
 
-def index_select(): ...
-
-
-def nms(dets, prob_threshold):
+def nms(dets, scores, prob_threshold):
     x1 = dets[:, 0]
     y1 = dets[:, 1]
     x2 = dets[:, 2]
     y2 = dets[:, 3]
-    scores = dets[:, 4]
 
     areas = (x2 - x1 + 1) * (y2 - y1 + 1)
 
@@ -54,9 +50,10 @@ def nms(dets, prob_threshold):
 
         width = np.maximum(0.0, xx2 - xx1 + 1)
         height = np.maximum(0.0, yy2 - yy1 + 1)
-
         union = width * height
 
         iou = union / (areas[max_index] + areas[score_index[1:]] - union)
-        ids = np.where(iou < prob_threshold)[0]
+        ids = np.where(iou <= prob_threshold)[0]
         score_index = score_index[ids + 1]
+
+    return keep

@@ -1,6 +1,6 @@
 import numpy as np
-import torch
 from anchor_generator import AnchorGenerator
+
 
 # generate anchor
 def gen_anchors():
@@ -37,14 +37,13 @@ def gen_anchors():
             base_size, scales, ratios, scale_major=False, ctr=ctr)
         indices = list(range(len(ratios)))
         indices.insert(1, len(indices))
-        anchor_generator.base_anchors = torch.index_select(
-            anchor_generator.base_anchors, 0, torch.LongTensor(indices))
+        anchor_generator.base_anchors = anchor_generator.base_anchors[indices]
         anchor_generators.append(anchor_generator)
 
     feature_size = ((38, 38), (19, 19), (10, 10), (5, 5), (3, 3), (1, 1))
     mlvl_anchors = []
     for feat_size, stride, anchor_generator in zip(feature_size, anchor_strides, anchor_generators):
-        anchor = anchor_generator.grid_anchors(feat_size, stride, device='cpu')
+        anchor = anchor_generator.grid_anchors(feat_size, stride)
         mlvl_anchors.append(anchor)
 
     return mlvl_anchors

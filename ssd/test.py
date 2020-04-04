@@ -27,9 +27,26 @@ if __name__ == '__main__':
     assert(np.allclose(np.max(ndarray, axis=1), tensor.max(dim=1)[0].numpy()))
 
     dists = np.random.permutation(np.arange(30)).reshape(6, 5)
-    print(dists)
     tensor = torch.tensor(dists)
     _, idx = tensor.topk(2)
-    print(dists[topk(dists, 2, axis=1)[0][0]])
-    print(dists[topk(dists, 2, axis=1)[0][1]])
-    print(tensor[idx].numpy())
+    assert(np.array_equal(dists[topk(dists, 2, axis=1)], tensor[idx].numpy()))
+
+    ndarray = np.random.rand(12, 15, 18, 21)
+    tensor = torch.tensor(ndarray)
+
+    assert(np.array_equal(tensor.new_tensor([0, 0, 0, 0]).repeat(1, tensor.size(1)//4).numpy(),
+                          np.tile(np.array([0, 0, 0, 0], dtype=ndarray.dtype), (1, tensor.size(1)//4))))
+    assert(np.array_equal(tensor.unsqueeze(1).numpy(), np.expand_dims(ndarray, axis=1)))
+
+    assert(np.array_equal(ndarray.reshape(ndarray.shape), tensor.expand_as(tensor).numpy()))
+
+    x = torch.randn(3, 4)
+    indices = torch.tensor([0, 2])
+    assert(np.allclose(torch.index_select(x, 0, indices).numpy(), x.numpy()[indices.numpy()]))
+
+    import torch
+    rois = np.array([[0., 0., 1., 1.], [0., 0., 1., 1.], [0., 0., 1., 1.], [5., 5., 5., 5.]])
+    deltas = np.array([[0., 0., 0., 0.], [1., 1., 1., 1.], [0., 0., 2., -1.], [0.7, -1.9, -0.5, 0.3]])
+
+    import bbox_utils
+    print(bbox_utils.delta2bbox(rois, deltas, max_shape=(32, 32)))

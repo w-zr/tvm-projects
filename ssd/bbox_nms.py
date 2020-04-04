@@ -26,6 +26,8 @@ def multiclass_nms(multi_bboxes,
         tuple: (bboxes, labels), tensors of shape (k, 5) and (k, 1). Labels
             are 0-based.
     """
+    multi_bboxes = torch.from_numpy(multi_bboxes)
+    multi_scores = torch.from_numpy(multi_scores)
     num_classes = multi_scores.size(1) - 1
     # exclude background category
     if multi_bboxes.shape[1] > 4:
@@ -56,7 +58,12 @@ def multiclass_nms(multi_bboxes,
     max_coordinate = bboxes.max()
     offsets = labels.to(bboxes) * (max_coordinate + 1)
     bboxes_for_nms = bboxes + offsets[:, None]
+
+    scores = scores.to(dtype=torch.double)
+    bboxes_for_nms = bboxes_for_nms.to(dtype=torch.double)
+
     nms_cfg_ = nms_cfg.copy()
+    nms_type = nms_cfg_.pop('type', 'nms')
     nms_op = torchvision.ops.nms
     keep = nms_op(bboxes_for_nms, scores, nms_cfg_.get('iou_thr', None))
     bboxes = bboxes[keep]

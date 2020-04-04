@@ -1,26 +1,27 @@
 import time
+
 import cv2
+import numpy as np
 import onnx
 import tvm
 import tvm.contrib.graph_runtime as runtime
 import tvm.relay as relay
-from PIL import Image
-from torchvision import transforms
 
 # load image
 image_path = '9331584514251_.pic_hd.jpg'
+img = cv2.imread(image_path)
+img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 pre_start = time.process_time()
-img = Image.open(image_path)
 
 resize_shape = (300, 300)
-transform = transforms.Compose([
-    transforms.Resize(resize_shape, interpolation=Image.BILINEAR),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[123.675 / 255, 116.28 / 255, 103.53 / 255], std=[1, 1, 1]),
-])
-
-img = transform(img) * 255
+img = cv2.resize(img, resize_shape, interpolation=cv2.INTER_LINEAR)
+mean = np.array([123.675, 116.28, 103.53]).reshape(1, -1)
+std = np.array([1., 1., 1.]).reshape(1, -1)
+img = img.astype(np.float32)
+img = cv2.subtract(img, mean)
+img = cv2.multiply(img, std)
+img = img.transpose(2, 0, 1)
 pre_end = time.process_time()
 
 # load onnx model and build tvm runtime
@@ -57,7 +58,7 @@ module = runtime.create(graph, lib, ctx)
 # run
 # module.load_params(bytearray(params))
 module.set_input(**params)
-module.set_input('input.1', tvm.nd.array(img.numpy().astype('float32')))
+module.set_input('input.1', tvm.nd.array(img))
 time_list = []
 post_time_list = []
 

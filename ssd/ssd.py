@@ -67,30 +67,31 @@ module.run()
 end = time.process_time()
 time_list.append(end - start)
 
+# generate anchor
+from anchor import gen_anchors
+
+mlvl_anchors = gen_anchors()
+
+img_shape = image.shape
+scale_factor = [img_shape[1] / resize_shape[1], img_shape[0] / resize_shape[0]] # x_scale, y_scale
+
+from bbox_utils import get_bboxes_single
+from easydict import EasyDict
+cfg = dict(
+    nms=dict(type='nms', iou_thr=0.45),
+    min_bbox_size=0,
+    score_thr=0.6,
+    max_per_img=200
+)
+
+cfg = EasyDict(cfg)
+
 # get output
 post_start = time.process_time()
 cls_score_list = [module.get_output(i).asnumpy()[0] for i in range(6)]
 bbox_pred_list = [module.get_output(i + 6).asnumpy()[0] for i in range(6)]
 
-# generate anchor
-from anchor import gen_anchors
-
-mlvl_anchors = gen_anchors()
 # recover bbox
-from bbox_utils import get_bboxes_single
-
-img_shape = image.shape
-scale_factor = [img_shape[1] / resize_shape[1], img_shape[0] / resize_shape[0]] # x_scale, y_scale
-
-cfg = dict(
-    nms=dict(type='nms', iou_thr=0.45),
-    min_bbox_size=0,
-    score_thr=0.02,
-    max_per_img=200
-)
-from easydict import EasyDict
-
-cfg = EasyDict(cfg)
 proposals = get_bboxes_single(cls_score_list, bbox_pred_list, mlvl_anchors, resize_shape, scale_factor, cfg,
                               rescale=True)
 post_end = time.process_time()
